@@ -1,0 +1,3 @@
+[submodule "go-rpio"]
+	path = go-rpio
+	url = git@github.com:peergum/go-rpio.git
