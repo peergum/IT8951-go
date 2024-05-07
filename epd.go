@@ -94,10 +94,10 @@ const (
 )
 
 // DisplayMode display mode
-const (
+var (
 	InitMode DisplayMode = 0 // INIT mode, for every init or some time after A2 mode refresh
 	GC16Mode DisplayMode = 2 // GC16 mode, for every time to display 16 grayscale image
-	A2Mode   DisplayMode = 6 // A2 mode, for fast refresh without flash
+	A2Mode   DisplayMode = 4 // A2 mode, for fast refresh without flash (can be 6 for other displays)
 
 )
 
@@ -172,6 +172,12 @@ func Init(vcom uint16) DevInfo {
 	Reset()
 	SystemRun()
 	devInfo := GetSystemInfo()
+	lut := wordsToString(devInfo.LUTVersion)
+	A2Mode = 6
+	// special case for 6" e-ink Paper
+	if lut == "M641" {
+		A2Mode = 4
+	}
 	WriteRegister(I80CPCR, 0x0001) // packed mode
 	waitReady()
 	if vcom != ReadVCOM() {
