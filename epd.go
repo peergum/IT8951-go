@@ -98,12 +98,11 @@ var (
 	InitMode DisplayMode = 0 // INIT mode, for every init or some time after A2 mode refresh
 	GC16Mode DisplayMode = 2 // GC16 mode, for every time to display 16 grayscale image
 	A2Mode   DisplayMode = 4 // A2 mode, for fast refresh without flash (can be 6 for other displays)
-
 )
 
 // Endian Type
 const (
-	LoadImgSmallEndian EndianType = iota
+	LoadImgLittleEndian EndianType = iota
 	LoadImgBigEndian
 )
 
@@ -404,7 +403,7 @@ func (imageInfo LoadImgInfo) HostAreaPackedPixelWrite(imageAreaInfo AreaImgInfo,
 	imageInfo.LoadImageAreaStart(imageAreaInfo)
 
 	// send data
-	if packedWrite && bpp != 8 {
+	if true || packedWrite {
 		dataBuffer.WriteBuffer()
 	} else {
 		var ww int // buffer width in words
@@ -519,7 +518,7 @@ func (devInfo DevInfo) ClearRefresh(targetAddress uint32, mode DisplayMode) {
 	Debug("End init area")
 	imageInfo := LoadImgInfo{
 		SourceBufferAddr: DataBuffer(frameBuffer),
-		EndianType:       LoadImgSmallEndian,
+		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP4,
 		Rotate:           Rotate0,
 		TargetMemAddr:    targetAddress,
@@ -539,22 +538,7 @@ func (devInfo DevInfo) ClearRefresh(targetAddress uint32, mode DisplayMode) {
 func Refresh1bpp(buffer DataBuffer, X, Y, W, H uint16, mode DisplayMode, targetAddress uint32, packedWrite bool) {
 	Debug("Refresh1bpp")
 	WaitForDisplayReady()
-
-	imageInfo := LoadImgInfo{
-		SourceBufferAddr: buffer,
-		EndianType:       LoadImgSmallEndian,
-		PixelFormat:      BPP8, //Use 8bpp to set 1bpp
-		Rotate:           Rotate0,
-		TargetMemAddr:    targetAddress,
-	}
-
-	areaInfo := AreaImgInfo{
-		X: X / 8,
-		Y: Y,
-		W: W / 8,
-		H: H,
-	}
-	imageInfo.HostAreaPackedPixelWrite(areaInfo, 1, packedWrite)
+	Write1bpp(buffer, X, Y, W, H, targetAddress, packedWrite)
 	Display1bpp(X, Y, W, H, mode, targetAddress, 0xF0, 0x00)
 }
 
@@ -564,15 +548,15 @@ func Write1bpp(buffer DataBuffer, X, Y, W, H uint16, targetAddress uint32, packe
 
 	imageInfo := LoadImgInfo{
 		SourceBufferAddr: buffer,
-		EndianType:       LoadImgSmallEndian,
+		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP8, //Use 8bpp to set 1bpp
 		Rotate:           Rotate0,
 		TargetMemAddr:    targetAddress,
 	}
 	areaInfo := AreaImgInfo{
-		X: X / 8,
+		X: X,
 		Y: Y,
-		W: W / 8,
+		W: W,
 		H: H,
 	}
 	imageInfo.HostAreaPackedPixelWrite(areaInfo, 1, packedWrite)
@@ -590,7 +574,7 @@ func Refresh2bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 
 	imageInfo := LoadImgInfo{
 		SourceBufferAddr: buffer,
-		EndianType:       LoadImgSmallEndian,
+		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP2,
 		Rotate:           Rotate0,
 		TargetMemAddr:    targetAddress,
@@ -615,7 +599,7 @@ func Refresh4bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 
 	imageInfo := LoadImgInfo{
 		SourceBufferAddr: buffer,
-		EndianType:       LoadImgSmallEndian,
+		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP4,
 		Rotate:           Rotate0,
 		TargetMemAddr:    targetAddress,
@@ -641,7 +625,7 @@ func Refresh8bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 
 	imageInfo := LoadImgInfo{
 		SourceBufferAddr: buffer,
-		EndianType:       LoadImgSmallEndian,
+		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP8,
 		Rotate:           Rotate0,
 		TargetMemAddr:    targetAddress,

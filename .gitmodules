@@ -1,0 +1,3 @@
+[submodule "docs/C_SDK"]
+	path = docs/C_SDK
+	url = https://github.com/waveshare/IT8951.git
