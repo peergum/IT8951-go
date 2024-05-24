@@ -1,7 +1,7 @@
 package it8951
 
 import (
-	"github.com/peergum/go-rpio/v4"
+	"github.com/peergum/go-rpio/v5"
 	"log"
 	"time"
 )

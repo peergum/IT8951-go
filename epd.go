@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
-	"github.com/peergum/go-rpio/v4"
+	"github.com/peergum/go-rpio/v5"
 	"log"
 	"time"
 )
