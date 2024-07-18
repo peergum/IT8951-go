@@ -39,7 +39,7 @@ func Open() (err error) {
 	}
 
 	rpio.SpiChipSelect(0)
-	rpio.SpiSpeed(12000000) // 12Mhz
+	rpio.SpiSpeed(24000000) // 24MHz
 	rpio.SpiMode(0, 0)
 
 	//

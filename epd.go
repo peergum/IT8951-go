@@ -166,7 +166,7 @@ func Debug(format string, args ...interface{}) {
 }
 
 // Init the EPD modules with desired VCOM value
-func Init(vcom uint16) DevInfo {
+func Init(vcom uint16) *DevInfo {
 	Open()
 	Reset()
 	SystemRun()
@@ -358,7 +358,8 @@ func LoadImageEnd() {
 }
 
 // getSystemInfo obtains device info
-func GetSystemInfo() (devInfo DevInfo) {
+func GetSystemInfo() (devInfo *DevInfo) {
+	devInfo = &DevInfo{}
 	Debug("Getting EPD system devInfo")
 	WriteCommand(UserCmdGetDevInfo)
 	data := make(DataBuffer, (binary.Size(devInfo)+1)/2)
@@ -403,6 +404,7 @@ func (imageInfo LoadImgInfo) HostAreaPackedPixelWrite(imageAreaInfo AreaImgInfo,
 	imageInfo.LoadImageAreaStart(imageAreaInfo)
 
 	// send data
+	// always send data fast
 	if true || packedWrite {
 		dataBuffer.WriteBuffer()
 	} else {
@@ -501,7 +503,7 @@ func StandBy() {
 	WriteCommand(TCONStandby)
 }
 
-func (devInfo DevInfo) ClearRefresh(targetAddress uint32, mode DisplayMode) {
+func (devInfo DevInfo) ClearRefresh(targetAddress uint32, mode DisplayMode, rotation Rotate) {
 	Debug("Refreshing screen (t=%0x)", targetAddress)
 	var imageSize int               // image size in words
 	if (devInfo.PanelW*4)%16 == 0 { // exactly 16 bits
@@ -520,7 +522,7 @@ func (devInfo DevInfo) ClearRefresh(targetAddress uint32, mode DisplayMode) {
 		SourceBufferAddr: DataBuffer(frameBuffer),
 		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP4,
-		Rotate:           Rotate0,
+		Rotate:           rotation,
 		TargetMemAddr:    targetAddress,
 	}
 	areaInfo := AreaImgInfo{
@@ -535,14 +537,14 @@ func (devInfo DevInfo) ClearRefresh(targetAddress uint32, mode DisplayMode) {
 	DisplayArea(0, 0, devInfo.PanelW, devInfo.PanelH, mode)
 }
 
-func Refresh1bpp(buffer DataBuffer, X, Y, W, H uint16, mode DisplayMode, targetAddress uint32, packedWrite bool) {
+func Refresh1bpp(buffer DataBuffer, X, Y, W, H uint16, mode DisplayMode, targetAddress uint32, packedWrite bool, rotation Rotate) {
 	Debug("Refresh1bpp")
 	WaitForDisplayReady()
-	Write1bpp(buffer, X, Y, W, H, targetAddress, packedWrite)
+	Write1bpp(buffer, X, Y, W, H, targetAddress, packedWrite, rotation)
 	Display1bpp(X, Y, W, H, mode, targetAddress, 0xF0, 0x00)
 }
 
-func Write1bpp(buffer DataBuffer, X, Y, W, H uint16, targetAddress uint32, packedWrite bool) {
+func Write1bpp(buffer DataBuffer, X, Y, W, H uint16, targetAddress uint32, packedWrite bool, rotation Rotate) {
 	Debug("Write1bpp")
 	WaitForDisplayReady()
 
@@ -550,7 +552,7 @@ func Write1bpp(buffer DataBuffer, X, Y, W, H uint16, targetAddress uint32, packe
 		SourceBufferAddr: buffer,
 		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP8, //Use 8bpp to set 1bpp
-		Rotate:           Rotate0,
+		Rotate:           rotation,
 		TargetMemAddr:    targetAddress,
 	}
 	areaInfo := AreaImgInfo{
@@ -568,7 +570,7 @@ func MultiFrameRefresh1bpp(X, Y, W, H uint16, targetAddress uint32) {
 	Display1bpp(X, Y, W, H, A2Mode, targetAddress, 0xF0, 0x00)
 }
 
-func Refresh2bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress uint32, packedWrite bool) {
+func Refresh2bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress uint32, packedWrite bool, rotation Rotate) {
 	Debug("Refresh2bpp")
 	WaitForDisplayReady()
 
@@ -576,7 +578,7 @@ func Refresh2bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 		SourceBufferAddr: buffer,
 		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP2,
-		Rotate:           Rotate0,
+		Rotate:           rotation,
 		TargetMemAddr:    targetAddress,
 	}
 	areaInfo := AreaImgInfo{
@@ -593,7 +595,7 @@ func Refresh2bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 	}
 }
 
-func Refresh4bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress uint32, packedWrite bool) {
+func Refresh4bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress uint32, packedWrite bool, rotation Rotate) {
 	Debug("Refresh4bpp")
 	WaitForDisplayReady()
 
@@ -601,7 +603,7 @@ func Refresh4bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 		SourceBufferAddr: buffer,
 		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP4,
-		Rotate:           Rotate0,
+		Rotate:           rotation,
 		TargetMemAddr:    targetAddress,
 	}
 	areaInfo := AreaImgInfo{
@@ -619,7 +621,7 @@ func Refresh4bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 	}
 }
 
-func Refresh8bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress uint32) {
+func Refresh8bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress uint32, rotation Rotate) {
 	Debug("Refresh8bpp")
 	WaitForDisplayReady()
 
@@ -627,7 +629,7 @@ func Refresh8bpp(buffer DataBuffer, X, Y, W, H uint16, hold bool, targetAddress 
 		SourceBufferAddr: buffer,
 		EndianType:       LoadImgLittleEndian,
 		PixelFormat:      BPP8,
-		Rotate:           Rotate0,
+		Rotate:           rotation,
 		TargetMemAddr:    targetAddress,
 	}
 	areaInfo := AreaImgInfo{
