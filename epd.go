@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
-	"github.com/peergum/go-rpio/v4"
+	"github.com/peergum/go-rpio/v5"
 	"log"
 	"time"
 )
@@ -404,7 +404,7 @@ func (imageInfo LoadImgInfo) HostAreaPackedPixelWrite(imageAreaInfo AreaImgInfo,
 	imageInfo.LoadImageAreaStart(imageAreaInfo)
 
 	// send data
-	if packedWrite && bpp != 8 {
+	if packedWrite && bpp == 8 {
 		dataBuffer.WriteBuffer()
 	} else {
 		var ww int // buffer width in words
