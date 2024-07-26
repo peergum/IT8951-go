@@ -1,2 +1,4 @@
 github.com/peergum/go-rpio/v5 v5.0.0-alpha h1:RLRinv2gRP7pGBUZha/maiJ/L8j0DsW7bseNA9tjWiA=
 github.com/peergum/go-rpio/v5 v5.0.0-alpha/go.mod h1:5X8yf+GJpCmymfP9Pdqld7LsZ3rf7Ll+xlief8PQ5tg=
+github.com/peergum/go-rpio/v5 v5.0.3 h1:DxFcoRcDkUwjNIRR71VSNVn6sQkY/AoTtDhIIR+VfjA=
+github.com/peergum/go-rpio/v5 v5.0.3/go.mod h1:5X8yf+GJpCmymfP9Pdqld7LsZ3rf7Ll+xlief8PQ5tg=
