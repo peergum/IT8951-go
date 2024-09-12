@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
-	"github.com/peergum/go-rpio/v5"
 	"log"
+	"periph.io/x/conn/v3/gpio"
 	"time"
 )
 
@@ -166,11 +166,14 @@ func Debug(format string, args ...interface{}) {
 }
 
 // Init the EPD modules with desired VCOM value
-func Init(vcom uint16) *DevInfo {
-	Open()
+func Init(vcom uint16, spiDev string) (devInfo *DevInfo, err error) {
+	if err = Open(spiDev); err != nil {
+		Debug("Can't init EPD: %v", err)
+		return nil, err
+	}
 	Reset()
 	SystemRun()
-	devInfo := GetSystemInfo()
+	devInfo = GetSystemInfo()
 	lut := wordsToString(devInfo.LUTVersion)
 	A2Mode = 6
 	// special case for 6" e-ink Paper
@@ -183,7 +186,7 @@ func Init(vcom uint16) *DevInfo {
 		WriteVCOM(vcom)
 		Debug("VCOM = -%.02fV\n", float32(ReadVCOM())/1000)
 	}
-	return devInfo
+	return devInfo, nil
 }
 
 // Exit properly closes all peripherals used
@@ -192,8 +195,8 @@ func Exit() {
 }
 
 func waitReady() {
-	//Debug("...")
-	for readyPin.Read() == rpio.Low {
+	//Debug("wait")
+	for readyPin.Read() == gpio.Low {
 		time.Sleep(time.Duration(10) * time.Microsecond)
 	}
 	//Debug("SPI Ready")
@@ -201,14 +204,25 @@ func waitReady() {
 
 func writeUint16(word uint16) {
 	//Debug("-> %04x", word)
-	rpio.SpiTransmit(byte(word >> 8))
-	rpio.SpiTransmit(byte(word & 0xff))
+	tx := make([]uint8, 2)
+	rx := make([]uint8, 2)
+	tx[0] = uint8(word >> 8)
+	tx[1] = uint8(word & 0xff)
+	if err := Conn.Tx(tx, rx); err != nil {
+		Debug("Write error: %v", err)
+	}
 }
 
 func readUint16() (word uint16) {
-	data := rpio.SpiReceive(2)
-	word = uint16(data[0])<<8 + uint16(data[1])
-	//Debug("<- %04x", word)
+	tx := make([]uint8, 2)
+	rx := make([]uint8, 2)
+	tx[0] = 0xff
+	tx[1] = 0xff
+	if err := Conn.Tx(tx, rx); err != nil {
+		Debug("Read error: %v", err)
+	}
+	word = uint16(rx[0])<<8 + uint16(rx[1])
+	Debug("<- %04x", word)
 	return
 }
 

@@ -1,6 +1,7 @@
-module github.com/peergum/IT8951-go
+module github.com/peergum/IT8951-go/v1
 
-go 1.22.2
+go 1.22.6
 
-require github.com/peergum/go-rpio/v5 v5.0.3
+toolchain go1.22.7
 
+require periph.io/x/conn/v3 v3.7.1 // indirect

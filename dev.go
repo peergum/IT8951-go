@@ -1,31 +1,49 @@
 package it8951
 
 import (
-	"github.com/peergum/go-rpio/v5"
 	"log"
+	"periph.io/x/conn/v3"
+	"periph.io/x/conn/v3/gpio"
+	"periph.io/x/conn/v3/gpio/gpioreg"
+	"periph.io/x/conn/v3/physic"
+	"periph.io/x/conn/v3/spi"
+	"periph.io/x/conn/v3/spi/spireg"
 	"time"
 )
 
 //
 
 const (
-	EpdRstPin  = 17 //11 // Raspberry Pi Pin 17
-	EpdCsPin   = 8  //24 // Raspberry Pi Pin 8
-	EpdBusyPin = 24 //18 // Raspberry Pi Pin 24
+	// orange pi zero 2W
+	//EpdRstPin  = "GPIO226" //"GPIO17" //11 // Raspberry Pi Pin 17
+	//EpdCsPin   = "GPIO229" //"GPIO8"  //24 // Raspberry Pi Pin 8
+	//EpdBusyPin = "GPIO228" //"GPIO24" //18 // Raspberry Pi Pin 24
+	// raspberry pi 4B
+	EpdRstPin  = "GPIO17" //11 // Raspberry Pi Pin 17
+	EpdCsPin   = "GPIO8"  //24 // Raspberry Pi Pin 8
+	EpdBusyPin = "GPIO24" //18 // Raspberry Pi Pin 24
 )
 
 var (
-	rstPin   rpio.Pin
-	csPin    rpio.Pin
-	readyPin rpio.Pin
+	chipSelect uint8 = 0
+	SpiPort    spi.PortCloser
+	Conn       spi.Conn
+	speed      physic.Frequency = 24 * physic.MegaHertz
+	rstPin     gpio.PinOut
+	csPin      gpio.PinOut
+	readyPin   gpio.PinIn
 )
 
 // Open sets the I/O ports and SPI
-func Open() (err error) {
-	Debug("Init start")
+func Open(spiDev string) (err error) {
+	Debug("Init start (SPI port = %s)", spiDev)
 
-	if err := rpio.Open(); err != nil {
-		log.Fatalln("RPIO Open Error:", err)
+	if SpiPort, err = spireg.Open(spiDev); err != nil {
+		log.Fatalln("SPI Port Open Failed:", err)
+	}
+
+	if err = SpiPort.LimitSpeed(24 * physic.MegaHertz); err != nil {
+		Debug("Can't limit speed on SPI port:", err)
 	}
 
 	//
@@ -34,13 +52,11 @@ func Open() (err error) {
 
 	Debug("Initializing SPI")
 
-	if err := rpio.SpiBegin(rpio.Spi0); err != nil {
-		log.Fatalln("SpiBegin Error:", err)
+	if Conn, err = SpiPort.Connect(speed, spi.Mode0|spi.NoCS, 8); err != nil {
+		log.Fatalln("SPI Setup Error:", err)
 	}
 
-	rpio.SpiChipSelect(0)
-	rpio.SpiSpeed(24000000) // 24MHz
-	rpio.SpiMode(0, 0)
+	Debug("SPI Limit size = %d", conn.Limits.MaxTxSize)
 
 	//
 	// init pins
@@ -48,50 +64,56 @@ func Open() (err error) {
 
 	Debug("Initializing GPIO pins")
 
-	rstPin = rpio.Pin(EpdRstPin)
-	csPin = rpio.Pin(EpdCsPin)
-	readyPin = rpio.Pin(EpdBusyPin)
+	rstPin = gpioreg.ByName(EpdRstPin)
+	csPin = gpioreg.ByName(EpdCsPin)
+	readyPin = gpioreg.ByName(EpdBusyPin)
 
-	rstPin.Output()
-	csPin.Output()
-	readyPin.Input()
-
-	csOff()
+	if err = rstPin.Out(gpio.High); err != nil {
+		// rstpin error
+	}
+	if err = csPin.Out(gpio.High); err != nil {
+		// cspin error
+	}
+	if err = readyPin.In(gpio.PullNoChange, gpio.NoEdge); err != nil {
+		// readypin error
+	}
 
 	Debug("EPD initialization complete")
 	return nil
 }
 
 // Close ends SPI usage and restores pins
-func Close() {
+func Close() error {
 	Debug("Shutting down EPD")
-	csPin.Low()
-	rstPin.Low()
+	_ = csPin.Out(gpio.Low)
+	_ = rstPin.Out(gpio.Low)
 
-	rpio.SpiEnd(rpio.Spi0)
-
-	rpio.Close()
+	if err := SpiPort.Close(); err != nil {
+		Debug("Error closing SPI port: %s", err)
+		return err
+	}
+	return nil
 }
 
 // csOn selects slave
 func csOn() {
 	//Debug("CS On")
-	csPin.Low()
+	_ = csPin.Out(gpio.Low)
 }
 
 // csOff deselects slave
 func csOff() {
 	//Debug("CS Off")
-	csPin.High()
+	_ = csPin.Out(gpio.High)
 }
 
 // Reset resets a slave
 func Reset() {
 	Debug("EPD Reset")
-	rstPin.High()
+	_ = rstPin.Out(gpio.High)
 	time.Sleep(time.Duration(200) * time.Millisecond)
-	rstPin.Low()
+	_ = rstPin.Out(gpio.Low)
 	time.Sleep(time.Duration(10) * time.Millisecond)
-	rstPin.High()
+	_ = rstPin.Out(gpio.High)
 	time.Sleep(time.Duration(200) * time.Millisecond)
 }
